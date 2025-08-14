@@ -3,6 +3,8 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
+const { MongoClient } = require('mongodb');
+const { connectDB } = require('./db-config');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -46,6 +48,36 @@ initializeDataFile();
 
 // Routes
 app.post('/api/feedback', upload.single('audioFeedback'), async (req, res) => {
+    try {
+        const { feedbacks, audioFiles } = await connectDB();
+        const feedback = req.body.feedback;
+        
+        // Save feedback to MongoDB
+        const feedbackData = {
+            feedback,
+            timestamp: new Date(),
+            audioFile: null
+        };
+
+        if (req.file) {
+            const audioBuffer = await fs.readFile(req.file.path);
+            const audioResult = await audioFiles.insertOne({
+                filename: req.file.filename,
+                data: audioBuffer,
+                uploadDate: new Date()
+            });
+            feedbackData.audioFile = audioResult.insertedId;
+            
+            // Clean up the temporary file
+            await fs.unlink(req.file.path);
+        }
+
+        const result = await feedbacks.insertOne(feedbackData);
+        res.json({ success: true, id: result.insertedId });
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        res.status(500).json({ success: false, error: 'Failed to save feedback' });
+    }
     try {
         const feedback = {
             id: Date.now().toString(),
