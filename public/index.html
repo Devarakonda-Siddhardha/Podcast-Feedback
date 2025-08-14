@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Feedback</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <h1><i class="fas fa-podcast"></i> Podcast Feedback</h1>
+            <button id="theme-toggle" class="theme-toggle">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="feedback-form">
+            <form id="feedback">
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Name:</label>
+                    <input type="text" id="name" required placeholder="Enter your name">
+                </div>
+
+                <div class="form-group">
+                    <label for="text-feedback"><i class="fas fa-pen"></i> Written Feedback:</label>
+                    <textarea id="text-feedback" rows="4" placeholder="Share your thoughts about the podcast..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="audio-feedback"><i class="fas fa-microphone"></i> Audio Feedback:</label>
+                    <div class="recording-controls">
+                        <button type="button" id="record">
+                            <i class="fas fa-microphone"></i> Start Recording
+                        </button>
+                        <span class="timer" id="recording-timer">00:00</span>
+                    </div>
+                    <div class="audio-preview">
+                        <audio id="audio-player" controls></audio>
+                        <button type="button" id="clear-recording" class="clear-button" style="display: none;">
+                            <i class="fas fa-trash"></i> Clear Recording
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit"><i class="fas fa-paper-plane"></i> Submit Feedback</button>
+            </form>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
