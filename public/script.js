@@ -13,7 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
     const clearRecordingButton = document.getElementById('clear-recording');
 
-    // Theme Toggle
+    // ******* PASTE YOUR APPS SCRIPT URL HERE *******
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDLKdmB-3DQyYA3JJLInb2SCIz_5uXwuqIw3dWPllsrNIKfar9FLyhHKXZT3E7UKML/exec";
+    // ***********************************************
+
+    // Theme Toggle (unchanged)
     themeToggle.addEventListener('click', () => {
         const html = document.documentElement;
         const isDark = html.getAttribute('data-theme') === 'dark';
@@ -70,22 +74,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     audioPlayer.src = audioUrl;
                     audioPlayer.style.display = 'block';
                     clearRecordingButton.style.display = 'inline-block';
-                    
-                    // Stop and reset timer
+
                     clearInterval(recordingTimer);
                     timerDisplay.textContent = '00:00';
-                    
-                    // Keep the stream active for potential new recordings
-                    audioPlayer.play().catch(e => console.log('Auto-play prevented:', e));
+                    audioPlayer.play().catch(() => {});
                 };
 
-                // Start recording
-                mediaRecorder.start(1000); // Collect data every second
+                mediaRecorder.start(1000); // gather chunks each second
                 isRecording = true;
                 recordButton.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
                 recordButton.classList.add('recording');
-                
-                // Start timer
+
                 startTime = Date.now();
                 recordingTimer = setInterval(updateTimer, 1000);
                 audioPlayer.style.display = 'none';
@@ -102,21 +101,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle form submission
+    // Convert blob to base64 (no prefix)
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    // Handle form submission -> send to Google Apps Script
     feedbackForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const formData = new FormData();
-        formData.append('name', document.getElementById('name').value);
-        formData.append('textFeedback', document.getElementById('text-feedback').value);
+        const name = document.getElementById('name').value;
+        const textFeedback = document.getElementById('text-feedback').value;
 
+        let audioBase64 = "";
         if (audioChunks.length > 0) {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            formData.append('audioFeedback', audioBlob, 'recording.wav');
+            const webmBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioBase64 = await blobToBase64(webmBlob);
         }
 
+        const formData = new URLSearchParams();
+        formData.append('name', name);
+        formData.append('textFeedback', textFeedback);
+        formData.append('audio', audioBase64);
+
         try {
-            const response = await fetch('/api/feedback', {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: formData
             });
@@ -125,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Feedback submitted successfully!');
                 feedbackForm.reset();
                 audioPlayer.src = '';
-                loadFeedback();
+                audioChunks = [];
             } else {
                 throw new Error('Failed to submit feedback');
             }
@@ -135,27 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Load existing feedback
-    async function loadFeedback() {
-        try {
-            const response = await fetch('/api/feedback');
-            const feedback = await response.json();
-            
-            feedbackContainer.innerHTML = feedback.map(item => `
-                <div class="feedback-item">
-                    <h3>${item.name}</h3>
-                    <div class="feedback-date">${new Date(item.createdAt).toLocaleDateString()}</div>
-                    <div class="feedback-text">${item.textFeedback}</div>
-                    ${item.audioFeedback ? `
-                        <audio controls src="/uploads/${item.audioFeedback.split('/').pop()}"></audio>
-                    ` : ''}
-                </div>
-            `).join('');
-        } catch (error) {
-            console.error('Error loading feedback:', error);
-        }
-    }
-
-    // Load initial feedback
-    loadFeedback();
+    // NOTE: Your previous loadFeedback() hit /api/feedback (no backend now).
+    // You can remove it or later implement a doGet() in Apps Script to read Sheet data.
 });
